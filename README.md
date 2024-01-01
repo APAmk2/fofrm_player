@@ -1,5 +1,5 @@
 # fofrm_player
-Fonline Engines .fofrm format player, very shitty.
+Fonline Engine's .fofrm format player, very shitty.
 
 ## Controls
 Left/Right arrow - change frame to previous/next.
