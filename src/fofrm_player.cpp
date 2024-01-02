@@ -113,15 +113,10 @@ void PlayFofrm(bool changeFrame, bool decrease) {
 }
 
 void PlayerLoop() {
-	if (lastFrame->w < 100 || lastFrame->h < 100) {
-		SDL_SetWindowSize(window, lastFrame->w * 2, lastFrame->h * 2);
-		winW = lastFrame->w * 2;
-		winH = lastFrame->h * 2;
-	}
-	else {
-		SDL_SetWindowSize(window, lastFrame->w, lastFrame->h);
-		winW = lastFrame->w;
-		winH = lastFrame->h;
+	SDL_SetWindowSize(window, lastFrame->w, lastFrame->h);
+	winW = lastFrame->w;
+	winH = lastFrame->h;
+
 	nextTime = SDL_GetTicks();
 	if (fps == 0) {
 		fps = 1;
