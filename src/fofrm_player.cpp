@@ -90,15 +90,18 @@ void LoadFofrm() {
 	lastFrame = IMG_Load(frameFiles[frameCount - 1].c_str());
 }
 
-void PlayFofrm(bool decrease) {
-	if (decrease) {
-		currFrame--;
+void PlayFofrm(bool changeFrame, bool decrease) {
+	if (changeFrame) {
+		if (decrease) {
+			currFrame--;
+		}
+		else {
+			currFrame++;
+		}
+
+		if (currFrame >= frameCount) currFrame = 0;
+		else if (currFrame < 0) currFrame = frameCount;
 	}
-	else {
-		currFrame++;
-	}
-	if (currFrame >= frameCount) currFrame = 0;
-	else if (currFrame < 0) currFrame = frameCount;
 
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, frames[currFrame], NULL, NULL);
@@ -130,10 +133,10 @@ void PlayerLoop() {
 					isPaused = !isPaused;
 					break;
 				case SDLK_LEFT:
-					PlayFofrm(true);
+					PlayFofrm(true, true);
 					break;
 				case SDLK_RIGHT:
-					PlayFofrm(false);
+					PlayFofrm(true, false);
 					break;
 				}
 			}
@@ -141,11 +144,12 @@ void PlayerLoop() {
 				winW = winW + winW * (e.wheel.y / 10.0);
 				winH = winH + winH * (e.wheel.y / 10.0);
 				SDL_SetWindowSize(window, winW, winH);
+				PlayFofrm(false, false);
 			}
 		}
 		if (!isPaused) {
 			if (TimeLeft() == 0) {
-				PlayFofrm(false);
+				PlayFofrm(true, false);
 				nextTime += 1000 / fps;
 			}
 		}
