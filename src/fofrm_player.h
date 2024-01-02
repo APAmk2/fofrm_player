@@ -1,5 +1,5 @@
 ﻿// fofrm_player.h - Header with all main definitions
-// Written by APAMk2, all rights reserved.
+// Copyright (C) 2024 APAMk2
 
 #pragma once
 

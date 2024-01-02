@@ -1,5 +1,5 @@
 ﻿// fofrm_player.cpp - Main source file
-// Written by APAMk2, all rights reserved.
+// Copyright (C) 2024 APAMk2
 
 #include "fofrm_player.h"
 
