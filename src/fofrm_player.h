@@ -18,8 +18,7 @@ void Destroy();
 Uint32 TimeLeft();
 void ProcessLine(std::string line);
 void LoadFofrm();
-void PlayFofrm();
-void MoveFrame(bool decrease);
+void PlayFofrm(bool decrease);
 void PlayerLoop();
 
 SDL_Window* window;
