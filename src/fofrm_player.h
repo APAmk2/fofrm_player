@@ -26,7 +26,7 @@ SDL_Renderer* renderer;
 SDL_Surface* lastFrame;
 std::filesystem::path file;
 std::vector< SDL_Texture* > frames(128);
-int frameCount = 0, fps = 0, currFrame = 0;
+int frameCount = 1, fps = 0, currFrame = 0;
 int winH, winW;
 std::string frameFiles[128];
 static Uint32 nextTime;

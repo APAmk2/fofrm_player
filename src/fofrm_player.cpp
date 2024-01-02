@@ -53,6 +53,7 @@ void ProcessLine(string line) {
 
 	regex re_fps("fps=(\\d+)");
 	regex re_count("count=(\\d+)");
+	regex re_frm("frm=");
 	regex re_frm_1("frm_(\\d+)=");
 	if (regex_search(line, match, re_fps))
 	{
@@ -66,6 +67,11 @@ void ProcessLine(string line) {
 	{
 		frameFiles[stoi(match[1])] = file.remove_filename().string() + regex_replace(line, re_frm_1, "");
 		cout << frameFiles[stoi(match[1])] << endl;
+	}
+	else if (regex_search(line, match, re_frm))
+	{
+		frameFiles[0] = file.remove_filename().string() + regex_replace(line, re_frm, "");
+		cout << frameFiles[0] << endl;
 	}
 }
 
@@ -116,8 +122,12 @@ void PlayerLoop() {
 		SDL_SetWindowSize(window, lastFrame->w, lastFrame->h);
 		winW = lastFrame->w;
 		winH = lastFrame->h;
+	nextTime = SDL_GetTicks();
+	if (fps == 0) {
+		fps = 1;
+		isPaused = true;
+		PlayFofrm(true, false);
 	}
-	nextTime = SDL_GetTicks() + 1000 / fps;
 	while (true) {
 		SDL_Event e;
 		if (SDL_PollEvent(&e)) {
