@@ -53,7 +53,7 @@ void ProcessLine(string line) {
 
 	regex re_fps("fps=(\\d+)");
 	regex re_count("count=(\\d+)");
-	regex re_frm("frm_(\\d+)=(\\w+)");
+	regex re_frm_1("frm_(\\d+)=");
 	if (regex_search(line, match, re_fps))
 	{
 		fps = stoi(match[1]);
@@ -62,9 +62,9 @@ void ProcessLine(string line) {
 	{
 		frameCount = stoi(match[1]);
 	}
-	else if (regex_search(line, match, re_frm))
+	else if (regex_search(line, match, re_frm_1))
 	{
-		frameFiles[stoi(match[1])] = file.remove_filename().string() + string(match[2]) + ".png";
+		frameFiles[stoi(match[1])] = file.remove_filename().string() + regex_replace(line, re_frm_1, "");
 		cout << frameFiles[stoi(match[1])] << endl;
 	}
 }
