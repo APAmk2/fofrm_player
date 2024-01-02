@@ -66,7 +66,7 @@ void ProcessLine(string line)
 	}
 	else if (regex_search(line, match, re_frm))
 	{
-		frameFiles[stoi(match[1])] = file.parent_path().string() + "\\" + string(match[2]) + ".png";
+		frameFiles[stoi(match[1])] = file.remove_filename().string() + string(match[2]) + ".png";
 		cout << frameFiles[stoi(match[1])] << endl;
 	}
 }
