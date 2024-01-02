@@ -100,7 +100,7 @@ void PlayFofrm(bool changeFrame, bool decrease) {
 		}
 
 		if (currFrame >= frameCount) currFrame = 0;
-		else if (currFrame < 0) currFrame = frameCount;
+		else if (currFrame < 0) currFrame = frameCount - 1;
 	}
 
 	SDL_RenderClear(renderer);
