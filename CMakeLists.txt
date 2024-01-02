@@ -9,5 +9,5 @@ find_package(SDL2_image REQUIRED)
 
 include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS})
 
-add_executable(fofrm_player "src/fofrm_player.cpp" )
+add_executable(fofrm_player "src/fofrm_player.cpp" info.rc)
 target_link_libraries(fofrm_player ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
