@@ -38,8 +38,7 @@ void Destroy() {
 	SDL_Quit();
 }
 
-Uint32 TimeLeft()
-{
+Uint32 TimeLeft() {
 	Uint32 now;
 
 	now = SDL_GetTicks();
@@ -49,8 +48,7 @@ Uint32 TimeLeft()
 		return nextTime - now;
 }
 
-void ProcessLine(string line)
-{
+void ProcessLine(string line) {
 	smatch match;
 
 	regex re_fps("fps=(\\d+)");
