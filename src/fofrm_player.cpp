@@ -11,7 +11,11 @@ void Init() {
 		Destroy();
 	}
 	if (IMG_Init(IMG_INIT_PNG) == 0) {
-		cout << "Error SDL2_image Initialization" << SDL_GetError();
+		cout << "Error SDL2_image Initialization" << IMG_GetError();
+		Destroy();
+	}
+	if (TTF_Init() != 0) {
+		cout << "Error SDL2_ttf Initialization" << TTF_GetError();
 		Destroy();
 	}
 
@@ -35,6 +39,7 @@ void Destroy() {
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	IMG_Quit();
+	TTF_Quit();
 	SDL_Quit();
 }
 

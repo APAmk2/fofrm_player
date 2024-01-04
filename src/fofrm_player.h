@@ -12,6 +12,7 @@
 
 #include "SDL.h"
 #include "include/SDL_image.h"
+#include "SDL_ttf.h"
 
 void Init();
 void Destroy();
