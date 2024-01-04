@@ -19,17 +19,23 @@ void Init() {
 		Destroy();
 	}
 
-	window = SDL_CreateWindow(".fofrm SDL2 Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_OPENGL);
+	window = SDL_CreateWindow(".fofrm SDL2 Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 150, 150, SDL_WINDOW_OPENGL );
+	
 	if (window == NULL) {
-		cout << "Error while window init";
+		cout << "Error while window init" << SDL_GetError();
 		Destroy();
 	}
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	
 	if (renderer == NULL) {
-		cout << "Error renderer creation";
+		cout << "Error while render creation" << SDL_GetError();
 		Destroy();
 	}
+	
+	font = TTF_OpenFont("C:/Windows/Fonts/vgasysr.fon", 12);
+	paused = renderText("Paused", textColor, renderer);
+	SDL_QueryTexture(paused, NULL, NULL, &pausedW, &pausedH);
 }
 
 void Destroy() {
@@ -38,6 +44,7 @@ void Destroy() {
 	}
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	TTF_CloseFont(font);
 	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
@@ -95,8 +102,14 @@ void LoadFofrm() {
 	for (size_t i = 0; i <= frameFiles->size(); i++) {
 		frames[i] = IMG_LoadTexture(renderer, frameFiles[i].c_str());
 	}
+}
 
-	lastFrame = IMG_Load(frameFiles[frameCount - 1].c_str());
+SDL_Texture* renderText(const string& text, SDL_Color color, SDL_Renderer* renderer) {
+	SDL_Surface* surf = TTF_RenderText_Solid(font, text.c_str(), color);
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surf);
+	SDL_FreeSurface(surf);
+
+	return texture;
 }
 
 void PlayFofrm(bool changeFrame, bool decrease) {
@@ -111,22 +124,41 @@ void PlayFofrm(bool changeFrame, bool decrease) {
 		if (currFrame >= frameCount) currFrame = 0;
 		else if (currFrame < 0) currFrame = frameCount - 1;
 	}
+	SDL_QueryTexture(frames[currFrame], NULL, NULL, &currFrameW, &currFrameH);
+	int tempW = currFrameW * zoomMult, tempH = currFrameH * zoomMult;
+	int txtW, txtH;
+
+	SDL_Texture* fpsText = renderText("FPS: " + to_string(fps), textColor, renderer);
+	SDL_Texture* frameText = renderText("Frame: " + to_string(currFrame), textColor, renderer);
+	SDL_QueryTexture(fpsText, NULL, NULL, &txtW, &txtH);
+
+	SDL_Rect* fpsRect = new SDL_Rect{ 3, 2, txtW, txtH };
+	SDL_Rect* pauseRect = new SDL_Rect{ 3, txtH + 2, pausedW, pausedH };
+	SDL_Rect* frameRect = new SDL_Rect{ 3 + txtW + 10, 2, pausedW, pausedH };
+	SDL_Rect* textRect = new SDL_Rect{ ((winW / 2) - (tempW / 2)), 40 , tempW, tempH };
 
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, frames[currFrame], NULL, NULL);
+	SDL_RenderCopy(renderer, frames[currFrame], NULL, textRect);
+	SDL_RenderCopy(renderer, fpsText, NULL, fpsRect);
+	SDL_RenderCopy(renderer, frameText, NULL, frameRect);
+	if (isPaused) {
+		SDL_RenderCopy(renderer, paused, NULL, pauseRect);
+	}
 	SDL_RenderPresent(renderer);
+	SDL_DestroyTexture(fpsText);
+	SDL_DestroyTexture(frameText);
 }
 
 void PlayerLoop() {
-	SDL_SetWindowSize(window, lastFrame->w, lastFrame->h);
-	winW = lastFrame->w;
-	winH = lastFrame->h;
+	SDL_QueryTexture(frames[currFrame], NULL, NULL, &currFrameW, &currFrameH);
+	winW = (currFrameW * zoomMult >= 150) ? currFrameW * zoomMult : 150;
+	winH = (currFrameH * zoomMult + 40 >= 150) ? currFrameH * zoomMult + 40 : 150;
+	SDL_SetWindowSize(window, winW, winH);
 
 	nextTime = SDL_GetTicks();
 	if (fps == 0) {
-		fps = 1;
 		isPaused = true;
-		PlayFofrm(true, false);
+		PlayFofrm(false, false);
 	}
 	while (true) {
 		SDL_Event e;
@@ -139,6 +171,7 @@ void PlayerLoop() {
 				switch (e.key.keysym.sym) {
 				case SDLK_SPACE:
 					isPaused = !isPaused;
+					PlayFofrm(false, false);
 					break;
 				case SDLK_LEFT:
 					PlayFofrm(true, true);
@@ -146,12 +179,27 @@ void PlayerLoop() {
 				case SDLK_RIGHT:
 					PlayFofrm(true, false);
 					break;
+				case SDLK_KP_PLUS:
+					fps += 1;
+					break;
+				case SDLK_KP_MINUS:
+					fps -= 1;
+					break;
 				}
 			}
 			if (e.type == SDL_MOUSEWHEEL) {
-				winW = winW + winW * (e.wheel.y / 10.0);
-				winH = winH + winH * (e.wheel.y / 10.0);
-				SDL_SetWindowSize(window, winW, winH);
+				if (e.wheel.y > 0) {
+					zoomMult += 0.1;
+				}
+				else {
+					zoomMult -= 0.1;
+				}
+				int tw = currFrameW * zoomMult, th = currFrameH * zoomMult + 40;
+				if (tw >= 150 || th >= 150) {
+					winW = (tw >= 150) ? tw : 150;
+					winH = (th >= 150) ? th : 150;
+					SDL_SetWindowSize(window, winW, winH);
+				}
 				PlayFofrm(false, false);
 			}
 		}

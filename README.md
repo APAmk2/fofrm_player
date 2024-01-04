@@ -4,6 +4,8 @@ Fonline Engine's .fofrm format player, very shitty.
 ## Controls
 Left/Right arrow - change frame to previous/next.
 
+KP_Plus/KP_Minus - Increase/Decrease FPS.
+
 Space - pause animation.
 
 Mousewheel up/down - change window size.
