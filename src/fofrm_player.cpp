@@ -2,6 +2,15 @@
 // Copyright (C) 2024 APAMk2
 
 #include "fofrm_player.h"
+#include "fofrm_parser.h"
+
+#include <iostream>
+#include <fstream>
+#include <format>
+
+#include "SDL.h"
+#include "SDL_image.h"
+#include "SDL_ttf.h"
 
 using namespace std;
 
@@ -39,6 +48,7 @@ void Init() {
 }
 
 void Destroy() {
+	SDL_DestroyTexture(paused);
 	for (size_t i = 0; i < frames.size(); i++) {
 		SDL_DestroyTexture(frames[i]);
 	}
@@ -58,50 +68,6 @@ Uint32 TimeLeft() {
 		return 0;
 	else
 		return nextTime - now;
-}
-
-void ProcessLine(string line) {
-	smatch match;
-
-	regex re_fps("fps=(\\d+)");
-	regex re_count("count=(\\d+)");
-	regex re_frm("frm=");
-	regex re_frm_1("frm_(\\d+)=");
-	if (regex_search(line, match, re_fps))
-	{
-		fps = stoi(match[1]);
-	}
-	else if (regex_search(line, match, re_count))
-	{
-		frameCount = stoi(match[1]);
-	}
-	else if (regex_search(line, match, re_frm_1))
-	{
-		frameFiles[stoi(match[1])] = file.remove_filename().string() + regex_replace(line, re_frm_1, "");
-		cout << frameFiles[stoi(match[1])] << endl;
-	}
-	else if (regex_search(line, match, re_frm))
-	{
-		frameFiles[0] = file.remove_filename().string() + regex_replace(line, re_frm, "");
-		cout << frameFiles[0] << endl;
-	}
-}
-
-void LoadFofrm() {
-	string fofrm_data;
-	ifstream input(file);
-	if (input.is_open()) {
-		while (getline(input, fofrm_data)) {
-			ProcessLine(fofrm_data);
-		}
-	}
-	input.close();
-	fofrm_data.erase();
-	frameFiles->shrink_to_fit();
-
-	for (size_t i = 0; i <= frameFiles->size(); i++) {
-		frames[i] = IMG_LoadTexture(renderer, frameFiles[i].c_str());
-	}
 }
 
 SDL_Texture* renderText(const string& text, SDL_Color color, SDL_Renderer* renderer) {
@@ -125,31 +91,40 @@ void PlayFofrm(bool changeFrame, bool decrease) {
 		else if (currFrame < 0) currFrame = frameCount - 1;
 	}
 	SDL_QueryTexture(frames[currFrame], NULL, NULL, &currFrameW, &currFrameH);
-	int tempW = currFrameW * zoomMult, tempH = currFrameH * zoomMult;
+	int zoomW = currFrameW * zoomMult, zoomH = currFrameH * zoomMult;
 	int txtW, txtH;
+
+	SDL_Rect* texRect = new SDL_Rect{ ((winW / 2) - (zoomW / 2)), ((winH / 2 + 20) - (zoomH / 2)) , zoomW, zoomH };
 
 	SDL_Texture* fpsText = renderText("FPS: " + to_string(fps), textColor, renderer);
 	SDL_Texture* frameText = renderText("Frame: " + to_string(currFrame), textColor, renderer);
+	SDL_Texture* zoomText = renderText("Zoom: " + to_string( int(100 * zoomMult) ), textColor, renderer);
 	SDL_QueryTexture(fpsText, NULL, NULL, &txtW, &txtH);
-
 	SDL_Rect* fpsRect = new SDL_Rect{ 3, 2, txtW, txtH };
-	SDL_Rect* pauseRect = new SDL_Rect{ 3, txtH + 2, pausedW, pausedH };
-	SDL_Rect* frameRect = new SDL_Rect{ 3 + txtW + 10, 2, pausedW, pausedH };
-	SDL_Rect* textRect = new SDL_Rect{ ((winW / 2) - (tempW / 2)), 40 , tempW, tempH };
+
+	SDL_Rect* pauseRect = new SDL_Rect{ 3, fpsRect->h + 2, pausedW, pausedH };
+
+	SDL_QueryTexture(frameText, NULL, NULL, &txtW, &txtH);
+	SDL_Rect* frameRect = new SDL_Rect{ fpsRect->w + 10, 2, txtW, txtH};
+	
+	SDL_QueryTexture(zoomText, NULL, NULL, &txtW, &txtH);
+	SDL_Rect* zoomRect = new SDL_Rect{ 3 + ((pausedW + 10) * isPaused), pauseRect->y, txtW, txtH};
 
 	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, frames[currFrame], NULL, textRect);
+	SDL_RenderCopy(renderer, frames[currFrame], NULL, texRect);
 	SDL_RenderCopy(renderer, fpsText, NULL, fpsRect);
 	SDL_RenderCopy(renderer, frameText, NULL, frameRect);
 	if (isPaused) {
 		SDL_RenderCopy(renderer, paused, NULL, pauseRect);
 	}
+	SDL_RenderCopy(renderer, zoomText, NULL, zoomRect);
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(fpsText);
 	SDL_DestroyTexture(frameText);
+	SDL_DestroyTexture(zoomText);
 }
 
-void PlayerLoop() {
+void InitLoop() {
 	SDL_QueryTexture(frames[currFrame], NULL, NULL, &currFrameW, &currFrameH);
 	winW = (currFrameW * zoomMult >= 150) ? currFrameW * zoomMult : 150;
 	winH = (currFrameH * zoomMult + 40 >= 150) ? currFrameH * zoomMult + 40 : 150;
@@ -160,6 +135,10 @@ void PlayerLoop() {
 		isPaused = true;
 		PlayFofrm(false, false);
 	}
+	PlayerLoop();
+}
+
+void PlayerLoop() {
 	while (true) {
 		SDL_Event e;
 		if (SDL_PollEvent(&e)) {
@@ -171,7 +150,6 @@ void PlayerLoop() {
 				switch (e.key.keysym.sym) {
 				case SDLK_SPACE:
 					isPaused = !isPaused;
-					PlayFofrm(false, false);
 					break;
 				case SDLK_LEFT:
 					PlayFofrm(true, true);
@@ -181,12 +159,19 @@ void PlayerLoop() {
 					break;
 				case SDLK_KP_PLUS:
 					fps += 1;
+					if (fps == 1) {
+						isPaused = false;
+					}
 					break;
 				case SDLK_KP_MINUS:
 					fps -= 1;
+					if (fps < 1) {
+						isPaused = true;
+					}
 					break;
 				}
 			}
+
 			if (e.type == SDL_MOUSEWHEEL) {
 				if (e.wheel.y > 0) {
 					zoomMult += 0.1;
@@ -203,21 +188,58 @@ void PlayerLoop() {
 				PlayFofrm(false, false);
 			}
 		}
-		if (!isPaused) {
-			if (TimeLeft() == 0) {
-				PlayFofrm(true, false);
-				nextTime += 1000 / fps;
-			}
+		if (TimeLeft() == 0) {
+			PlayFofrm(!isPaused, false);
+			int del = (fps > 0) ? fps : 1;
+			nextTime += 1000 / del;
 		}
+	}
+}
+
+void SetupSettings(unordered_map<string, string> ini) {
+	if (ini.find("count") != ini.end()) {
+		frameCount = stoi(ini["count"]);
+	}
+	else {
+		cout << "Warning: \"count\" is not specified! Frame count is 1 as default.\n";
+		frameCount = 1;
+	}
+
+	if (ini.find("fps") != ini.end()) {
+		fps = stoi(ini["fps"]);
+	}
+	else {
+		cout << "Warning: \"fps\" is not specified! FPS is 0 as default.\n";
+		fps = 0;
+	}
+}
+
+void LoadFrames(filesystem::path file, unordered_map<string, string> ini) {
+	if (ini.find("frm_0") != ini.end()) {
+		for (int i = 0; i < frameCount; i++) {
+			string frmFileName = file.remove_filename().string() + ini["frm_" + to_string(i)];
+			frames.push_back(IMG_LoadTexture(renderer, frmFileName.c_str()));
+			cout << frmFileName << endl;
+		}
+	}
+	else {
+		string frmFileName = file.remove_filename().string() + ini["frm"];
+		frames.push_back(IMG_LoadTexture(renderer, frmFileName.c_str()));
+		cout << frmFileName << endl;
 	}
 }
 
 int main(int argc, char* argv[]) {
 	Init();
 
-	file = argv[1];
-	LoadFofrm();
-	PlayerLoop();
+	filesystem::path file = argv[1];
+
+	unordered_map<string, string> ini;
+
+	LoadFofrm(file, ini);
+	SetupSettings(ini);
+	LoadFrames(file, ini);
+	InitLoop();
 	
 	return 0;
 }
